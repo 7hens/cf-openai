@@ -1,3 +1,4 @@
+import { WECHAT_CONFIG } from './../../../platform/wechat';
 import { KvObject } from './../kv';
 import {
   genFail,
@@ -48,6 +49,14 @@ export abstract class Base<T extends Platform> {
   }
 
   abstract handleRequest(): Promise<MyResponse>
+
+  isAdmin(): boolean {
+    return this.ctx.role.has(CONST.ROLE.ADMIN);
+  }
+
+  isExperimental(): boolean {
+    return this.isAdmin();
+  }
 
   async openAiHandle(msgContent: string, msgId: string, msgTokenCount: number) {
     const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
@@ -109,7 +118,7 @@ export abstract class Base<T extends Platform> {
       return this.getRetryMessage(msgId)
     }
 
-    await kv.setPrompt(platform, appid, userId, msgId)
+    await kv.setPrompt(platform, appid, userId, msgId, msgContent)
 
     if (this.ctx.chatType === '单聊') {
       const r = await openai.createChatCompletion([
@@ -571,6 +580,9 @@ export abstract class Base<T extends Platform> {
     if (promptRes.data) {
       // 已有回答则直接返回
       if (answerRes.data) {
+        if (WECHAT_CONFIG.WECHAT_MESSAGE_JOIN_DELAYED && this.isExperimental()) {
+          return genSuccess(promptRes.data + '\n━━━━━━━━━━━━━━\n' + answerRes.data);
+        }
         return genSuccess(answerRes.data)
       }
       // 否则提示用户稍等重试

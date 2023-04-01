@@ -40,7 +40,10 @@ export const CONFIG: WeChatConfig = {
   WECHAT_HANDLE_MS_TIME: 13000,
   // 允许访问的 id 列表
   WECHAT_ID_LIST: [],
+  WECHAT_MESSAGE_JOIN_DELAYED: false,
 }
+
+export const WECHAT_CONFIG = CONFIG;
 
 export const defaultCtx = {
   platform: 'wechat' as PlatformType,

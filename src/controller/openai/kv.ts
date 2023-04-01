@@ -241,9 +241,10 @@ export async function setPrompt(
   platform: string,
   appid: string,
   userId: string,
-  msgId: string
+  msgId: string,
+  msgContent: string,
 ) {
-  return setWithStringify(getPromptKey(platform, appid, userId, msgId), 1, {
+  return setWithStringify(getPromptKey(platform, appid, userId, msgId), msgContent, {
     expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN,
   })
 }

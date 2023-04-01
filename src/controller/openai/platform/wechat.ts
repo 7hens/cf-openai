@@ -54,7 +54,7 @@ export class WeChatHandler extends Base<WeChat> {
   async _handleRecvMsg(msgObj: WeChatMsg) {
     const recvMsg = msgObj.msg
     if (recvMsg.MsgType !== 'text') {
-      return this.platform.genSendTextXmlMsg('只支持文字消息')
+      return this.platform.genSendTextXmlMsg('您好，ChatGPT 只支持文字消息。如果你遇到')
     }
     recvMsg.Content = recvMsg.Content.trim()
     const recvMsgTokenCount = estimateTokenCount(recvMsg.Content)

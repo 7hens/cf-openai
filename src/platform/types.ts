@@ -12,13 +12,14 @@ export type RecvMsg = WeChatMsg
 
 export type HandleRecvMsg<T> = (recvMsg: T) => Promise<MyResponse> | MyResponse
 
-export interface Platform<T extends RecvMsg = RecvMsg> {
-  readonly ctx: {
+export interface PlatformCtx {
     platform: WeChatCtx['platform']
     appid: WeChatCtx['appid']
     userId: WeChatCtx['userId']
-  }
+}
 
+export interface Platform<T extends RecvMsg = RecvMsg> {
+  readonly ctx: PlatformCtx
   readonly request: MyRequest
   readonly id: string
   logger: Logger

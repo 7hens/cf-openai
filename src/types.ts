@@ -21,7 +21,9 @@ export interface WeChatConfig {
   // 处理微信请求的最大毫秒数
   WECHAT_HANDLE_MS_TIME: number
   // 允许访问的 id 列表
-  WECHAT_ID_LIST: string[]
+  WECHAT_ID_LIST: string[],
+  // 是否将问题和答案拼接在一起
+  WECHAT_MESSAGE_JOIN_DELAYED: boolean,
 
   /**
    * 动态环境变量
