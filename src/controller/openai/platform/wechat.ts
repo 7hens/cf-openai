@@ -16,13 +16,9 @@ export class WeChatHandler extends Base<WeChat> {
    * 处理来自微信的请求
    */
   async handleRequest() {
-    return this.platform.handleRequest(this.handleRecvMsg.bind(this), () => {
-      const msg =
-        !this.ctx.isRequestOpenAi ||
-          this.ctx.chatType === '单聊' ||
-          !this.platform.ctx.recvMsg.MsgId
-          ? '服务异常，请稍后重试'
-          : this.getRetryMessage(this.platform.ctx.recvMsg.MsgId)
+    return this.platform.handleRequest(this.handleRecvMsg.bind(this), async () => {
+      const isSeverError = !this.ctx.isRequestOpenAi || this.ctx.chatType === '单聊' || !this.platform.ctx.recvMsg.MsgId;
+      const msg = isSeverError ? '服务异常，请稍后重试' : await this.getMessageOnDelayed(this.platform.ctx.recvMsg.MsgId);
       return this.genWeChatTextXmlResponse(msg)
     })
   }

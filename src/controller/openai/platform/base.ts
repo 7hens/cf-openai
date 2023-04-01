@@ -7,6 +7,7 @@ import {
   errorToString,
   Result,
   mergeFromEnv,
+  sleep,
 } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG } from '../config'
@@ -113,9 +114,8 @@ export abstract class Base<T extends Platform> {
         this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
         return answerRes.data
       }
-      await KvObject.lastMessage(this.platform.ctx).set(msgId);
       // 否则提示用户稍等重试
-      return this.getRetryMessage(msgId)
+      return await this.getMessageOnDelayed(msgId);
     }
 
     await kv.setPrompt(platform, appid, userId, msgId, msgContent)
@@ -167,8 +167,7 @@ export abstract class Base<T extends Platform> {
         return lastChatAnswerRes.data.content
       }
       // 否则提示用户稍等重试
-      await KvObject.lastMessage(this.platform.ctx).set(msgId);
-      return this.getRetryMessage(msgId)
+      return this.getMessageOnDelayed(msgId);
     }
 
     // 没有 conversationId 则用 reqId 作为 conversationId
@@ -566,7 +565,7 @@ export abstract class Base<T extends Platform> {
     const { platform, userId, appid } = this.platform.ctx
 
     if (!msgId || !msgId.trim()) {
-      return genFail('msgId 为空')
+      return genFail('没有消息')
     }
     msgId = msgId.trim().split("\n")[0];
 
@@ -580,22 +579,51 @@ export abstract class Base<T extends Platform> {
     if (promptRes.data) {
       // 已有回答则直接返回
       if (answerRes.data) {
-        if (WECHAT_CONFIG.WECHAT_MESSAGE_JOIN_DELAYED && this.isExperimental()) {
+        await this.readDelayedMessage(msgId);
+        if (WECHAT_CONFIG.WECHAT_MESSAGE_JOIN_DELAYED) {
           return genSuccess(promptRes.data + '\n━━━━━━━━━━━━━━\n' + answerRes.data);
         }
         return genSuccess(answerRes.data)
       }
       // 否则提示用户稍等重试
-      return genSuccess(this.getRetryMessage(msgId))
+      return genFail(this.getRetryMessage(msgId))
     }
-
-    return genSuccess('该 msgId 无记录，可能已过期')
+    return genFail('该消息无记录，可能已过期')
   }
 
   protected async retryLastMessage(params: any) {
-    const msgId = await KvObject.lastMessage(this.platform.ctx).get() ?? ''
+    const msgId = await this.getFirstDelayedMessage();
+    if (!msgId) {
+      return genFail(this.getRetryMessage(''));
+    }
     this.logger.debug(`retry last message ${msgId}`);
+    const result = await this.retry(msgId);
+    if (result.success) {
+      return result;
+    }
+    await sleep(WECHAT_CONFIG.WECHAT_HANDLE_MS_TIME);
     return await this.retry(msgId);
+  }
+
+  protected async retryLastMessageOnDelayed() {
+    const msgId = await this.getFirstDelayedMessage();
+    if (!msgId) {
+      return genFail('没有消息');
+    }
+    this.logger.debug(`retry last message ${msgId} on delayed`);
+    return await this.retry(msgId);
+  }
+
+  protected async getMessageOnDelayed(msgId: string): Promise<string> {
+    await this.onMessageDelayed(msgId);
+    let msg = this.getRetryMessage(msgId);
+    if (WECHAT_CONFIG.WECHAT_MESSAGE_ASYNC_CHAT) {
+      const result = await this.retryLastMessageOnDelayed();
+      if (result.success) {
+        msg = result.data;
+      }
+    }
+    return msg;
   }
 
   protected async getUsage(params: any) {
@@ -627,7 +655,7 @@ export abstract class Base<T extends Platform> {
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
-      `当前用户: ${getWeChatOpenIdWithMask(userId)}`,
+      // `当前用户: ${getWeChatOpenIdWithMask(userId)}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
@@ -664,7 +692,7 @@ export abstract class Base<T extends Platform> {
           this.logger.error(
             `${MODULE} 命令执行错误 ${errorToString(error as Error)}`
           )
-          return genFail('服务异常：执行命令是失败')
+          return genFail('服务异常：执行命令时失败')
         }
       }
     }
@@ -686,10 +714,22 @@ export abstract class Base<T extends Platform> {
     return logger
   }
 
+  protected async onMessageDelayed(msgId: string) {
+    await KvObject.unreadMessages(this.platform.ctx).child(msgId).set(msgId);
+  }
+
+  protected async getFirstDelayedMessage(): Promise<string | null> {
+    return (await KvObject.unreadMessages(this.platform.ctx).firstChild())?.get();
+  }
+
+  protected async readDelayedMessage(msgId: string) {
+    await KvObject.unreadMessages(this.platform.ctx).child(msgId).del();
+  }
+
   protected getRetryMessage(msgId: string): string {
     // return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`;
-    return `${commandName.retry} ${msgId}` + '\n处理中，请稍后输入 .. 获取回答';
-    // return "处理中，请稍后输入 .. 获取回答";
+    // return `${commandName.retry} ${msgId}` + '\n处理中，请稍后输入 .. 获取回答';
+    return "处理中，稍后请输入 .. 获取回答";
   }
 }
 

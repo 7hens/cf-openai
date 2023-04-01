@@ -24,6 +24,8 @@ export interface WeChatConfig {
   WECHAT_ID_LIST: string[],
   // 是否延迟的将问题和回答拼接在一起
   WECHAT_MESSAGE_JOIN_DELAYED: boolean,
+  // 是否使用异步聊天：当响应超时时，使用上一个回答
+  WECHAT_MESSAGE_ASYNC_CHAT: boolean,
 
   /**
    * 动态环境变量

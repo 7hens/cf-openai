@@ -1,5 +1,5 @@
 import { PlatformCtx } from './../../platform/types';
-import { CONST } from '../../global'
+import { CONST, KV } from '../../global'
 import { set, get, getWithMetadata, del, setWithStringify } from '../../kv'
 
 import type openai from 'openai'
@@ -322,19 +322,25 @@ export class KvObject<T = string> {
     return KvObject.of<T>(this.key, key).expires(this.ttl);
   }
 
+  async list<T = string>(limit?: number): Promise<KvObject<T>[]> {
+    const listResult = await KV.list({ prefix: this.key, limit });
+    return listResult.keys.map(key => KvObject.of<T>(key.name).expires(this.ttl));
+  }
+
+  async firstChild<T = string>(): Promise<KvObject<T>> {
+    const first = await this.list<T>(1)
+    return first && first[0];
+  }
+
   static of<T = string>(...parts: string[]): KvObject<T> {
     return new KvObject<T>(parts.join(':'), 60);
   }
 
-  static forUser<T = string>(ctx: PlatformCtx, tag: string): KvObject<T> {
-    return KvObject.of(ctx.platform, ctx.appid, ctx.userId, tag);
+  static forUser<T = string>(tag: string, ctx: PlatformCtx): KvObject<T> {
+    return KvObject.of(tag, ctx.platform, ctx.appid, ctx.userId);
   }
 
-  static lastMessage(ctx: PlatformCtx): KvObject<string> {
-    return KvObject.forUser(ctx, 'lastMessage').expires(3 * 60);
-  }
-
-  static unreadMessages(ctx: PlatformCtx): KvObject<string[]> {
-    return KvObject.forUser<string[]>(ctx, 'unreadMessages').expires(3 * 60);
+  static unreadMessages(ctx: PlatformCtx): KvObject<string> {
+    return KvObject.forUser('unreadMessages', ctx).expires(3 * 60);
   }
 }

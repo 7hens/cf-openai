@@ -41,6 +41,7 @@ export const CONFIG: WeChatConfig = {
   // 允许访问的 id 列表
   WECHAT_ID_LIST: [],
   WECHAT_MESSAGE_JOIN_DELAYED: false,
+  WECHAT_MESSAGE_ASYNC_CHAT: true,
 }
 
 export const WECHAT_CONFIG = CONFIG;
