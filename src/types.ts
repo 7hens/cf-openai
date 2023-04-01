@@ -22,7 +22,7 @@ export interface WeChatConfig {
   WECHAT_HANDLE_MS_TIME: number
   // 允许访问的 id 列表
   WECHAT_ID_LIST: string[],
-  // 是否将问题和答案拼接在一起
+  // 是否延迟的将问题和回答拼接在一起
   WECHAT_MESSAGE_JOIN_DELAYED: boolean,
 
   /**

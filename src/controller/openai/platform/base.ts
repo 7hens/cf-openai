@@ -113,7 +113,7 @@ export abstract class Base<T extends Platform> {
         this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
         return answerRes.data
       }
-      await KvObject.lastMessage(userId).set(msgId);
+      await KvObject.lastMessage(this.platform.ctx).set(msgId);
       // 否则提示用户稍等重试
       return this.getRetryMessage(msgId)
     }
@@ -167,7 +167,7 @@ export abstract class Base<T extends Platform> {
         return lastChatAnswerRes.data.content
       }
       // 否则提示用户稍等重试
-      await KvObject.lastMessage(userId).set(msgId);
+      await KvObject.lastMessage(this.platform.ctx).set(msgId);
       return this.getRetryMessage(msgId)
     }
 
@@ -593,8 +593,7 @@ export abstract class Base<T extends Platform> {
   }
 
   protected async retryLastMessage(params: any) {
-    const userId = this.platform.ctx.userId
-    const msgId = await KvObject.lastMessage(userId).get() ?? ''
+    const msgId = await KvObject.lastMessage(this.platform.ctx).get() ?? ''
     this.logger.debug(`retry last message ${msgId}`);
     return await this.retry(msgId);
   }
@@ -689,8 +688,8 @@ export abstract class Base<T extends Platform> {
 
   protected getRetryMessage(msgId: string): string {
     // return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`;
-    return `${commandName.retry} ${msgId}` +
-      '\n处理中，请稍后输入 .. 获取回答';
+    return `${commandName.retry} ${msgId}` + '\n处理中，请稍后输入 .. 获取回答';
+    // return "处理中，请稍后输入 .. 获取回答";
   }
 }
 

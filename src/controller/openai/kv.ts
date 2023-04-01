@@ -1,3 +1,4 @@
+import { PlatformCtx } from './../../platform/types';
 import { CONST } from '../../global'
 import { set, get, getWithMetadata, del, setWithStringify } from '../../kv'
 
@@ -302,7 +303,7 @@ export class KvObject<T = string> {
   }
 
   async set(value: T) {
-    const options : KVNamespacePutOptions = { expirationTtl: Math.max(this.ttl, 60) }
+    const options: KVNamespacePutOptions = { expirationTtl: Math.max(this.ttl, 60) }
     if (typeof value === 'string') {
       return await set(this.key, value.toString(), options);
     }
@@ -317,7 +318,7 @@ export class KvObject<T = string> {
     return new KvObject<T>(this.key, seconds);
   }
 
-  child<T>(key: string): KvObject<T> {
+  child<T = string>(key: string): KvObject<T> {
     return KvObject.of<T>(this.key, key).expires(this.ttl);
   }
 
@@ -325,8 +326,15 @@ export class KvObject<T = string> {
     return new KvObject<T>(parts.join(':'), 60);
   }
 
-  static lastMessage(userId: string): KvObject<string> {
-    return KvObject.of("lastMessage", userId).expires(3 * 60);
+  static forUser<T = string>(ctx: PlatformCtx, tag: string): KvObject<T> {
+    return KvObject.of(ctx.platform, ctx.appid, ctx.userId, tag);
   }
 
+  static lastMessage(ctx: PlatformCtx): KvObject<string> {
+    return KvObject.forUser(ctx, 'lastMessage').expires(3 * 60);
+  }
+
+  static unreadMessages(ctx: PlatformCtx): KvObject<string[]> {
+    return KvObject.forUser<string[]>(ctx, 'unreadMessages').expires(3 * 60);
+  }
 }
