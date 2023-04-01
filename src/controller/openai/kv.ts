@@ -314,17 +314,17 @@ export class KvObject<T = string> {
     return await del(this.key);
   }
 
-  expires(seconds: number): KvObject<T> {
+  setTtl(seconds: number): KvObject<T> {
     return new KvObject<T>(this.key, seconds);
   }
 
   child<T = string>(key: string): KvObject<T> {
-    return KvObject.of<T>(this.key, key).expires(this.ttl);
+    return KvObject.of<T>(this.key, key).setTtl(this.ttl);
   }
 
   async list<T = string>(limit?: number): Promise<KvObject<T>[]> {
     const listResult = await KV.list({ prefix: this.key, limit });
-    return listResult.keys.map(key => KvObject.of<T>(key.name).expires(this.ttl));
+    return listResult.keys.map(key => KvObject.of<T>(key.name).setTtl(this.ttl));
   }
 
   async firstChild<T = string>(): Promise<KvObject<T>> {
@@ -341,6 +341,6 @@ export class KvObject<T = string> {
   }
 
   static unreadMessages(ctx: PlatformCtx): KvObject<string> {
-    return KvObject.forUser('unreadMessages', ctx).expires(3 * 60);
+    return KvObject.forUser('unreadMessages', ctx).setTtl(3 * 60);
   }
 }
